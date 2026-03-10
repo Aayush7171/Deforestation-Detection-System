@@ -1,0 +1,411 @@
+/* ==================== Global Styles ==================== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+/* ==================== Header ==================== */
+.header {
+    background: linear-gradient(to right, #1a472a, #2d5a3d);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.header-content h1 {
+    margin: 0;
+    font-size: 2.5em;
+    font-weight: 600;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+    margin: 10px 0 0 0;
+    font-size: 1.1em;
+    opacity: 0.95;
+    font-weight: 300;
+}
+
+/* ==================== Main Container ==================== */
+.container {
+    display: flex;
+    max-width: 1400px;
+    margin: 25px auto;
+    gap: 20px;
+    padding: 0 20px;
+    flex-wrap: wrap;
+}
+
+.map-container {
+    flex: 1;
+    min-width: 300px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+}
+
+#map {
+    flex: 1;
+    min-height: 600px;
+    z-index: 1;
+}
+
+.map-info {
+    padding: 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    color: #666;
+    font-size: 0.95em;
+}
+
+.map-info p {
+    margin: 5px 0;
+    padding: 0;
+}
+
+.area-info {
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* ==================== Sidebar ==================== */
+.sidebar {
+    flex: 0 1 350px;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+.sidebar h2 {
+    margin: 0 0 20px 0;
+    font-size: 1.5em;
+    color: #1a472a;
+    border-bottom: 3px solid #28a745;
+    padding-bottom: 10px;
+}
+
+.section {
+    margin-bottom: 25px;
+}
+
+.section h3 {
+    margin: 0 0 15px 0;
+    font-size: 1.1em;
+    color: #333;
+    display: flex;
+    align-items: center;
+}
+
+.period-group {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.period-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 0.95em;
+}
+
+.date-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-group label {
+    font-size: 0.85em;
+    color: #666;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.date-input {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.date-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* ==================== Buttons ==================== */
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+button {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #218838, #1ba186);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+}
+
+/* ==================== Loading Spinner ==================== */
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ==================== Result Container ==================== */
+.result-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.result-card {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    animation: slideUp 0.5s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-card h2 {
+    margin: 0 0 20px 0;
+    font-size: 1.8em;
+    color: #1a472a;
+    border-bottom: 3px solid #28a745;
+    padding-bottom: 15px;
+}
+
+.result-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.result-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 5px solid #667eea;
+}
+
+.metric-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.metric-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+}
+
+.percentage {
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 700;
+}
+
+.percentage.success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.percentage.warning {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+
+.percentage.danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.result-details {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.result-status {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 1.05em;
+}
+
+.status.success {
+    background: rgba(40, 167, 69, 0.15);
+    color: #155724;
+}
+
+.status.warning {
+    background: rgba(255, 193, 7, 0.15);
+    color: #856404;
+}
+
+.status.danger {
+    background: rgba(220, 53, 69, 0.15);
+    color: #721c24;
+}
+
+.status.processing {
+    background: rgba(102, 126, 234, 0.15);
+    color: #4c51bf;
+}
+
+.status.error {
+    background: rgba(220, 53, 69, 0.15);
+    color: #721c24;
+}
+
+.result-message {
+    margin: 10px 0 0 0;
+    color: #666;
+    line-height: 1.6;
+    font-size: 0.95em;
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 1024px) {
+    .container {
+        flex-wrap: wrap;
+    }
+
+    .sidebar {
+        flex: 0 1 100%;
+        position: static;
+    }
+
+    #map {
+        min-height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-content h1 {
+        font-size: 1.8em;
+    }
+
+    .subtitle {
+        font-size: 0.95em;
+    }
+
+    .container {
+        gap: 15px;
+    }
+
+    .sidebar {
+        padding: 20px;
+    }
+
+    .map-info p {
+        font-size: 0.85em;
+    }
+
+    .result-card {
+        padding: 20px;
+    }
+
+    .result-metric {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .metric-value {
+        font-size: 2em;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

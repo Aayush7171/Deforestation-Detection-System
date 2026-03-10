@@ -1,6 +1,15 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "env": {
-    "VITE_API_URL": "@vite-api-url"
-  }
+  "buildCommand": "",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
