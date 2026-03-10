@@ -14,7 +14,10 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 # Initialize Flask with explicit template and static folder paths
-app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
+app = Flask(__name__, 
+            template_folder=TEMPLATE_DIR, 
+            static_folder=STATIC_DIR,
+            static_url_path='/static')
 
 # Enable CORS for frontend access
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -99,7 +102,15 @@ def calculate_deforestation(coords, start1, end1, start2, end2):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    try:
+        logger.info(f"Serving index.html from: {TEMPLATE_DIR}")
+        logger.info(f"index.html exists: {os.path.exists(os.path.join(TEMPLATE_DIR, 'index.html'))}")
+        logger.info(f"Static folder exists: {os.path.exists(STATIC_DIR)}")
+        logger.info(f"style.css exists: {os.path.exists(os.path.join(STATIC_DIR, 'style.css'))}")
+        return render_template("index.html")
+    except Exception as e:
+        logger.error(f"Error rendering index.html: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/health", methods=["GET"])
 def health():
