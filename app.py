@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
+from whitenoise import WhiteNoise
 import ee
 import os
 from dotenv import load_dotenv
@@ -19,6 +20,9 @@ app = Flask(__name__,
             static_folder=STATIC_DIR,
             static_url_path='/static')
 
+# Use WhiteNoise to serve static files efficiently
+app.wsgi_app = WhiteNoise(app.wsgi_app, root=STATIC_DIR)
+
 # Enable CORS for frontend access
 CORS(app, resources={r"/*": {"origins": "*"}})
 
@@ -26,20 +30,29 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Earth Engine
-try:
-    # Try to authenticate with service account
-    ee_project = os.getenv('EE_PROJECT_ID', 'deforestation-calculation')
-    ee.Initialize(project=ee_project)
-    logger.info("Earth Engine initialized successfully")
-except Exception as e:
-    logger.warning(f"Earth Engine initialization with service account failed: {e}")
+# Global variable to track EE initialization
+ee_initialized = False
+
+# Initialize Earth Engine (non-blocking)
+def initialize_earth_engine():
+    global ee_initialized
     try:
-        # Fallback to default authentication
-        ee.Initialize()
-        logger.info("Earth Engine initialized with default credentials")
-    except Exception as auth_error:
-        logger.error(f"Failed to initialize Earth Engine: {auth_error}")
+        ee_project = os.getenv('EE_PROJECT_ID', 'deforestation-calculation')
+        ee.Initialize(project=ee_project)
+        ee_initialized = True
+        logger.info("✅ Earth Engine initialized successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Earth Engine service account auth failed: {str(e)[:100]}")
+        try:
+            ee.Initialize()
+            ee_initialized = True
+            logger.info("✅ Earth Engine initialized with cached credentials")
+        except Exception as auth_error:
+            logger.error(f"❌ Earth Engine not available: {str(auth_error)[:100]}")
+            ee_initialized = False
+
+# Call initialization
+initialize_earth_engine()
 
 
 def get_image(area, start, end):
@@ -122,6 +135,12 @@ def health():
 def calculate():
 
     try:
+        # Check if Earth Engine is initialized
+        if not ee_initialized:
+            error_msg = "Earth Engine not initialized. Please add credentials.json to the server or set EE_PROJECT_ID environment variable."
+            logger.error(error_msg)
+            return jsonify({"error": error_msg}), 503
+        
         print("Request received")
 
         data = request.get_json()
