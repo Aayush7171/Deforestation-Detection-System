@@ -8,7 +8,13 @@ import logging
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
+# Get the absolute path to the templates and static directories
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
+
+# Initialize Flask with explicit template and static folder paths
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 
 # Enable CORS for frontend access
 CORS(app, resources={r"/*": {"origins": "*"}})
