@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deforestation Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css"/>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+</head>
+
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>🌍 Deforestation Detection System</h1>
+            <p class="subtitle">Monitor vegetation changes using satellite imagery</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-info">
+                <p>📍 Draw a rectangle on the map to select an area</p>
+                <p id="area-info" class="area-info">No area selected</p>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2>Analysis Configuration</h2>
+            
+            <div class="section">
+                <h3>📅 Period Selection</h3>
+                
+                <div class="period-group">
+                    <label class="period-label">Before Period</label>
+                    <div class="date-inputs">
+                        <div class="input-group">
+                            <label>From:</label>
+                            <input type="date" id="before_start" class="date-input">
+                        </div>
+                        <div class="input-group">
+                            <label>To:</label>
+                            <input type="date" id="before_end" class="date-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="period-group">
+                    <label class="period-label">After Period</label>
+                    <div class="date-inputs">
+                        <div class="input-group">
+                            <label>From:</label>
+                            <input type="date" id="after_start" class="date-input">
+                        </div>
+                        <div class="input-group">
+                            <label>To:</label>
+                            <input type="date" id="after_end" class="date-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="calculate()">
+                    <span id="btn-text">Analyze</span>
+                    <span id="loading-spinner" class="spinner" style="display:none;"></span>
+                </button>
+                <button class="btn-secondary" onclick="resetForm()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="result-container" class="result-container" style="display:none;">
+        <div class="result-card">
+            <h2>Analysis Results</h2>
+            <div class="result-content">
+                <div class="result-metric">
+                    <span class="metric-label">Deforestation Rate:</span>
+                    <span id="result" class="metric-value"></span>
+                </div>
+                <div class="result-details">
+                    <div id="result-status" class="result-status"></div>
+                    <p id="result-message" class="result-message"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Determine API URL based on environment
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://127.0.0.1:5000'
+            : window.location.protocol + '//' + window.location.hostname.replace('vercel.app', 'onrender.com');
+        
+        // Satellite map
+        var satellite = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: 'Satellite',
+                maxZoom: 18
+            });
+
+        var street = L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }
+        );
+
+        var map = L.map('map', {
+            center: [20, 78],
+            zoom: 4,
+            layers: [satellite]
+        });
+
+        var baseMaps = {
+            "Satellite": satellite,
+            "Street": street
+        };
+
+        L.control.layers(baseMaps).addTo(map);
+
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            draw: {
+                rectangle: true,
+                polygon: false,
+                circle: false,
+                marker: false,
+                polyline: false
+            },
+            edit: { featureGroup: drawnItems }
+        });
+
+        map.addControl(drawControl);
+
+        var selectedCoords = null;
+        var selectedBounds = null;
+
+        map.on(L.Draw.Event.CREATED, function(event) {
+            drawnItems.clearLayers();
+
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+
+            selectedBounds = layer.getBounds();
+            selectedCoords = [
+                selectedBounds.getWest(),
+                selectedBounds.getSouth(),
+                selectedBounds.getEast(),
+                selectedBounds.getNorth()
+            ];
+
+            updateAreaInfo();
+        });
+
+        map.on(L.Draw.Event.EDITED, function(event) {
+            var layers = event.layers;
+            layers.eachLayer(function(layer) {
+                selectedBounds = layer.getBounds();
+                selectedCoords = [
+                    selectedBounds.getWest(),
+                    selectedBounds.getSouth(),
+                    selectedBounds.getEast(),
+                    selectedBounds.getNorth()
+                ];
+                updateAreaInfo();
+            });
+        });
+
+        function updateAreaInfo() {
+            if (selectedCoords) {
+                var width = (selectedCoords[2] - selectedCoords[0]).toFixed(4);
+                var height = (selectedCoords[3] - selectedCoords[1]).toFixed(4);
+                document.getElementById("area-info").innerHTML = 
+                    `✓ Area selected | Width: ${width}°, Height: ${height}°`;
+            }
+        }
+
+        function validateInputs() {
+            var before_start = document.getElementById("before_start").value;
+            var before_end = document.getElementById("before_end").value;
+            var after_start = document.getElementById("after_start").value;
+            var after_end = document.getElementById("after_end").value;
+
+            if (!selectedCoords) {
+                showError("Please select an area on the map");
+                return false;
+            }
+
+            if (!before_start || !before_end || !after_start || !after_end) {
+                showError("Please fill in all date fields");
+                return false;
+            }
+
+            if (new Date(before_start) >= new Date(before_end)) {
+                showError("Before period: start date must be before end date");
+                return false;
+            }
+
+            if (new Date(after_start) >= new Date(after_end)) {
+                showError("After period: start date must be before end date");
+                return false;
+            }
+
+            return true;
+        }
+
+        function showError(message) {
+            document.getElementById("result-container").style.display = "block";
+            document.getElementById("result-status").innerHTML = 
+                '<span class="status error">⚠️ Error</span>';
+            document.getElementById("result-message").textContent = message;
+            document.getElementById("result").textContent = "N/A";
+        }
+
+        function showLoading() {
+            document.getElementById("result-container").style.display = "block";
+            document.getElementById("btn-text").style.display = "none";
+            document.getElementById("loading-spinner").style.display = "inline-block";
+            document.querySelector(".btn-primary").disabled = true;
+            document.getElementById("result-status").innerHTML = 
+                '<span class="status processing">⏳ Processing...</span>';
+            document.getElementById("result-message").textContent = 
+                "Fetching satellite data and analyzing vegetation...";
+            document.getElementById("result").textContent = "Analyzing...";
+        }
+
+        function hideLoading() {
+            document.getElementById("btn-text").style.display = "inline";
+            document.getElementById("loading-spinner").style.display = "none";
+            document.querySelector(".btn-primary").disabled = false;
+        }
+
+        function getStatusColor(deforestation) {
+            if (deforestation < 5) return "success";
+            if (deforestation < 15) return "warning";
+            return "danger";
+        }
+
+        function getStatusText(deforestation) {
+            if (deforestation < 5) return "✓ Low Deforestation";
+            if (deforestation < 15) return "⚠️ Moderate Deforestation";
+            return "🔴 High Deforestation";
+        }
+
+        function calculate() {
+            if (!validateInputs()) {
+                return;
+            }
+
+            showLoading();
+
+            fetch(API_URL + "/calculate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    coords: selectedCoords,
+                    start1: document.getElementById("before_start").value,
+                    end1: document.getElementById("before_end").value,
+                    start2: document.getElementById("after_start").value,
+                    end2: document.getElementById("after_end").value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                hideLoading();
+
+                if (data.error) {
+                    showError("Error: " + data.error);
+                } else {
+                    var deforestation = data.deforestation;
+                    var statusClass = getStatusColor(deforestation);
+                    var statusText = getStatusText(deforestation);
+
+                    document.getElementById("result-status").innerHTML = 
+                        `<span class="status ${statusClass}">${statusText}</span>`;
+                    document.getElementById("result").innerHTML = 
+                        `<span class="percentage ${statusClass}">${deforestation}%</span>`;
+                    document.getElementById("result-message").innerHTML = 
+                        `Vegetation loss detected between the two periods. ` +
+                        (deforestation > 0 ? 
+                        `Approximately <strong>${deforestation}%</strong> of vegetation has been lost.` :
+                        `No significant vegetation loss detected.`);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                hideLoading();
+                showError("Server connection error. Make sure the backend server is running on " + API_URL);
+            });
+        }
+
+        function resetForm() {
+            drawnItems.clearLayers();
+            selectedCoords = null;
+            selectedBounds = null;
+            document.getElementById("before_start").value = "";
+            document.getElementById("before_end").value = "";
+            document.getElementById("after_start").value = "";
+            document.getElementById("after_end").value = "";
+            document.getElementById("area-info").textContent = "No area selected";
+            document.getElementById("result-container").style.display = "none";
+        }
+
+        // Set default dates (past year)
+        var today = new Date();
+        var oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+        var sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+
+        document.getElementById("before_start").valueAsDate = oneYearAgo;
+        document.getElementById("before_end").valueAsDate = sixMonthsAgo;
+        document.getElementById("after_start").valueAsDate = sixMonthsAgo;
+        document.getElementById("after_end").valueAsDate = today;
+    </script>
+</body>
+</html>
