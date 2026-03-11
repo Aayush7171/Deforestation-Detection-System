@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import logging
 import json
 import tempfile
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -39,42 +40,58 @@ ee_initialized = False
 def initialize_earth_engine():
     global ee_initialized
     try:
-        # Check if credentials are provided as environment variable
-        creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
-        
-        if creds_json:
-            # Write credentials to temporary file
+        # Method 1: Try using local credentials.json file
+        creds_file = os.path.join(BASE_DIR, 'credentials.json')
+        if os.path.exists(creds_file):
             try:
-                creds_dict = json.loads(creds_json)
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-                    json.dump(creds_dict, f)
-                    creds_file = f.name
-                
-                # Use service account credentials
                 credentials = ee.ServiceAccountCredentials(None, creds_file)
                 ee.Initialize(credentials)
                 ee_initialized = True
-                logger.info("✅ Earth Engine initialized with service account credentials")
+                logger.info("✅ Earth Engine initialized with local credentials.json")
                 return
-            except Exception as creds_error:
-                logger.warning(f"⚠️ Service account auth failed: {str(creds_error)[:100]}")
+            except Exception as local_creds_error:
+                logger.warning(f"⚠️ Local credentials.json auth failed: {str(local_creds_error)[:100]}")
         
-        # Fallback: Try with EE_PROJECT_ID
-        ee_project = os.getenv('EE_PROJECT_ID', 'deforestation-calculation')
-        ee.Initialize(project=ee_project)
+        # Method 2: Try using base64 encoded credentials from environment variable
+        creds_base64 = os.getenv('EE_CREDENTIALS_BASE64')
+        if creds_base64:
+            try:
+                # Decode base64
+                creds_json = base64.b64decode(creds_base64).decode('utf-8')
+                creds_dict = json.loads(creds_json)
+                
+                # Write to temporary file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                    json.dump(creds_dict, f)
+                    temp_creds_file = f.name
+                
+                credentials = ee.ServiceAccountCredentials(None, temp_creds_file)
+                ee.Initialize(credentials)
+                ee_initialized = True
+                logger.info("✅ Earth Engine initialized with base64 encoded credentials")
+                return
+            except Exception as base64_error:
+                logger.warning(f"⚠️ Base64 credentials failed: {str(base64_error)[:100]}")
+        
+        # Method 3: Try with EE_PROJECT_ID
+        ee_project = os.getenv('EE_PROJECT_ID')
+        if ee_project:
+            try:
+                ee.Initialize(project=ee_project)
+                ee_initialized = True
+                logger.info("✅ Earth Engine initialized with project credentials")
+                return
+            except Exception as project_error:
+                logger.warning(f"⚠️ Project credentials failed: {str(project_error)[:100]}")
+        
+        # Method 4: Last resort - try cached credentials
+        ee.Initialize()
         ee_initialized = True
-        logger.info("✅ Earth Engine initialized with project credentials")
+        logger.info("✅ Earth Engine initialized with cached credentials")
         
-    except Exception as e:
-        logger.warning(f"⚠️ Earth Engine initialization failed: {str(e)[:100]}")
-        try:
-            # Last resort: Try with cached credentials
-            ee.Initialize()
-            ee_initialized = True
-            logger.info("✅ Earth Engine initialized with cached credentials")
-        except Exception as final_error:
-            logger.error(f"❌ Earth Engine not available: {str(final_error)[:100]}")
-            ee_initialized = False
+    except Exception as final_error:
+        logger.error(f"❌ Earth Engine not available: {str(final_error)[:100]}")
+        ee_initialized = False
 
 # Call initialization
 initialize_earth_engine()
@@ -162,7 +179,7 @@ def calculate():
     try:
         # Check if Earth Engine is initialized
         if not ee_initialized:
-            error_msg = "Earth Engine not initialized. Please set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable with your service account key."
+            error_msg = "Earth Engine not initialized. Please set EE_CREDENTIALS_BASE64 environment variable with your base64-encoded service account key."
             logger.error(error_msg)
             return jsonify({"error": error_msg}), 503
         
