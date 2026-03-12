@@ -7,6 +7,12 @@
 ![Badge](https://img.shields.io/badge/Earth%20Engine-Latest-orange)
 ![Badge](https://img.shields.io/badge/License-MIT-red)
 
+## 🔗 Quick Links
+
+- 🌐 **[Live Frontend](https://deforestation-detection-system.vercel.app/)** (Vercel)
+- 🔧 **[Live Backend API](https://deforestation-detection-system.onrender.com/)** (Render)
+- 📚 **[GitHub Repository](https://github.com/Aayush7171/Deforestation-Detection-System)**
+
 ## 📸 Screenshot
 
 ```
@@ -169,9 +175,13 @@ Health check endpoint
 }
 ```
 
-## 🌐 Deployment
+## 🌐 Live Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+✅ **Frontend (Vercel)**: https://deforestation-detection-system.vercel.app/
+
+✅ **Backend API (Render)**: https://deforestation-detection-system.onrender.com/
+
+Both are **LIVE and Production Ready**! 🚀
 
 ### Quick Deploy to Render & Vercel
 
@@ -179,14 +189,14 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 ```bash
 git push origin main
 # Render auto-deploys
-# Visit: https://deforestation-detection.onrender.com
+# Visit: https://deforestation-detection-system.onrender.com
 ```
 
 **Frontend (Vercel):**
 ```bash
 # Connected to GitHub
 # Auto-deploys on push
-# Visit: https://your-project.vercel.app
+# Visit: https://deforestation-detection-system.vercel.app
 ```
 
 ## ⚙️ Configuration
