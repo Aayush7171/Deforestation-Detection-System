@@ -98,40 +98,53 @@ initialize_earth_engine()
 
 
 def get_image(area, start, end):
+    """Get median composite image with optimized memory usage"""
+    try:
+        collection = (
+            ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
+            .filterBounds(area)
+            .filterDate(start, end)
+            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
+            .select(['B4','B8'])
+        )
 
-    collection = (
-        ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-        .filterBounds(area)
-        .filterDate(start, end)
-        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20))
-        .select(['B4','B8'])
-    )
+        # Check collection size without loading all data
+        size_reduction = collection.size()
+        
+        if size_reduction.getInfo() == 0:
+            raise Exception("No satellite images found for selected dates")
 
-    size = collection.size().getInfo()
-
-    if size == 0:
-        raise Exception("No satellite images found for selected dates")
-
-    return collection.median()
+        # Return median with optimized processing
+        return collection.median()
+    except Exception as e:
+        logger.error(f"Error fetching satellite image: {str(e)[:100]}")
+        raise
 
 
 def vegetation_percent(ndvi, area):
+    """Calculate vegetation percentage with optimized memory usage"""
+    try:
+        # Create vegetation mask
+        vegetation = ndvi.gt(0.3)
 
-    vegetation = ndvi.gt(0.3)
+        # Reduce region with lower pixel limit to save memory
+        stats = vegetation.reduceRegion(
+            reducer=ee.Reducer.mean(),
+            geometry=area,
+            scale=100,  # Increased from 30m to 100m resolution (3x less memory)
+            maxPixels=1e6,  # Reduced from 1e9 to 1e6
+            bestEffort=True  # Use best effort if region too large
+        )
 
-    stats = vegetation.reduceRegion(
-        reducer=ee.Reducer.mean(),
-        geometry=area,
-        scale=30,
-        maxPixels=1e9
-    )
+        value = stats.get('nd').getInfo()
 
-    value = stats.get('nd').getInfo()
+        if value is None:
+            return 0
 
-    if value is None:
-        return 0
-
-    return value * 100
+        return value * 100
+    except Exception as e:
+        logger.error(f"Error calculating vegetation: {str(e)[:100]}")
+        raise
 
 
 def calculate_deforestation(coords, start1, end1, start2, end2):
@@ -183,7 +196,7 @@ def calculate():
             logger.error(error_msg)
             return jsonify({"error": error_msg}), 503
         
-        print("Request received")
+        logger.info("Request received - processing deforestation analysis")
 
         data = request.get_json()
 
@@ -193,17 +206,25 @@ def calculate():
         start2 = data["start2"]
         end2 = data["end2"]
 
-        print("Coordinates:", coords)
-        print("Dates:", start1, end1, start2, end2)
+        logger.info(f"Coordinates: {coords}")
+        logger.info(f"Dates: {start1} to {end1} and {start2} to {end2}")
 
         result = calculate_deforestation(coords, start1, end1, start2, end2)
 
-        print("Result:", result)
+        logger.info(f"Analysis complete - Deforestation rate: {result}%")
 
         return jsonify({"deforestation": result})
 
+    except TimeoutError as e:
+        error_msg = f"Request timeout: Analysis took too long. Try a smaller area or shorter date range. Details: {str(e)[:100]}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 504
+    except MemoryError as e:
+        error_msg = f"Out of memory: Area or date range is too large. Try a smaller selection. Details: {str(e)[:100]}"
+        logger.error(error_msg)
+        return jsonify({"error": error_msg}), 503
     except Exception as e:
-        error_msg = str(e)
+        error_msg = f"Analysis error: {str(e)[:200]}"
         logger.error(f"Calculation error: {error_msg}")
         return jsonify({"error": error_msg}), 400
 
